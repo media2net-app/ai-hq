@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma'
 // POST /api/tasks/[id]/execute - Add task to queue for execution
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
-    const taskId = params.id
+    const taskId = id
 
     // Verify task exists
     const task = await prisma.task.findUnique({

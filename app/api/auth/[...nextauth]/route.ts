@@ -45,10 +45,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user, token }) {
       if (session.user) {
         // For credentials provider, user might not be available
-        if (user) {
-          session.user.id = user.id
+        if (user && 'id' in user) {
+          (session.user as any).id = user.id
         } else if (token?.sub) {
-          session.user.id = token.sub
+          (session.user as any).id = token.sub
         }
       }
       return session

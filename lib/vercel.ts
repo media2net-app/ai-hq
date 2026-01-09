@@ -1,54 +1,77 @@
-import { Client } from '@vercel/sdk'
+// Vercel SDK - using fetch API directly for compatibility
+let vercelToken: string | null = null
 
-let vercelClient: Client | null = null
-
-export function getVercelClient(): Client {
-  if (!vercelClient) {
-    const token = process.env.VERCEL_TOKEN
-    if (!token) {
+export function getVercelToken(): string {
+  if (!vercelToken) {
+    vercelToken = process.env.VERCEL_TOKEN || ''
+    if (!vercelToken) {
       throw new Error('VERCEL_TOKEN environment variable is not set')
     }
-    vercelClient = new Client({ token })
   }
-  return vercelClient
+  return vercelToken
 }
 
-// Trigger deployment
+// Trigger deployment using Vercel REST API
 export async function triggerDeployment(
   projectId: string,
   gitRef: string = 'main'
 ) {
-  const client = getVercelClient()
+  const token = getVercelToken()
   
   try {
-    const deployment = await client.deployments.create({
-      projectId,
-      gitSource: {
-        type: 'github',
-        ref: gitRef,
+    const response = await fetch(`https://api.vercel.com/v13/deployments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        projectId,
+        gitSource: {
+          type: 'github',
+          ref: gitRef,
+        },
+      }),
     })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to trigger deployment')
+    }
+
+    const deployment = await response.json()
     
     return {
       id: deployment.id,
       url: deployment.url,
-      state: deployment.readyState,
+      state: deployment.readyState || 'BUILDING',
     }
   } catch (error: any) {
     throw new Error(`Failed to trigger deployment: ${error.message}`)
   }
 }
 
-// Get deployment status
+// Get deployment status using Vercel REST API
 export async function getDeploymentStatus(deploymentId: string) {
-  const client = getVercelClient()
+  const token = getVercelToken()
   
   try {
-    const deployment = await client.deployments.get(deploymentId)
+    const response = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to get deployment status')
+    }
+
+    const deployment = await response.json()
     return {
       id: deployment.id,
       url: deployment.url,
-      state: deployment.readyState,
+      state: deployment.readyState || 'UNKNOWN',
       createdAt: deployment.createdAt,
     }
   } catch (error: any) {
@@ -56,16 +79,27 @@ export async function getDeploymentStatus(deploymentId: string) {
   }
 }
 
-// List deployments for a project
+// List deployments for a project using Vercel REST API
 export async function listDeployments(projectId: string) {
-  const client = getVercelClient()
+  const token = getVercelToken()
   
   try {
-    const deployments = await client.deployments.list({ projectId })
-    return deployments.map((d) => ({
+    const response = await fetch(`https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=10`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to list deployments')
+    }
+
+    const data = await response.json()
+    return (data.deployments || []).map((d: any) => ({
       id: d.id,
       url: d.url,
-      state: d.readyState,
+      state: d.readyState || 'UNKNOWN',
       createdAt: d.createdAt,
     }))
   } catch (error: any) {

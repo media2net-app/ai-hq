@@ -82,7 +82,7 @@ export async function GET() {
 
       // Merge GitHub data with database data (prefer database for tasks)
       projects = projects.map((ghProject) => {
-        const dbProject = dbProjects.find((p) => p.githubRepo === ghProject.githubRepo)
+        const dbProject = dbProjects.find((p: any) => p.githubRepo === ghProject.githubRepo)
         if (dbProject) {
           return {
             ...ghProject,
@@ -96,7 +96,7 @@ export async function GET() {
 
       // Create missing projects in database
       for (const repo of repos) {
-        const exists = dbProjects.some((p) => p.githubRepo === repo.fullName)
+        const exists = dbProjects.some((p: any) => p.githubRepo === repo.fullName)
         if (!exists) {
           try {
             await prismaClient.project.create({

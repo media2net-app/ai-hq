@@ -35,10 +35,10 @@ try {
 }
 
 // Task queue
-export const taskQueue = new Queue('tasks', { connection })
+export const taskQueue = new Queue('tasks', { connection: connection as any })
 
 // Queue events for monitoring
-export const queueEvents = new QueueEvents('tasks', { connection })
+export const queueEvents = new QueueEvents('tasks', { connection: connection as any })
 
 // Worker for processing tasks
 export const taskWorker = new Worker(
@@ -51,7 +51,7 @@ export const taskWorker = new Worker(
     return await executeTask(taskId)
   },
   {
-    connection,
+    connection: connection as any,
     concurrency: 1, // Process one task at a time
     removeOnComplete: {
       age: 3600, // Keep completed jobs for 1 hour

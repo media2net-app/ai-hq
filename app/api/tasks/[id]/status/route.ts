@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma'
 // GET /api/tasks/[id]/status - SSE endpoint for real-time status updates
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -15,13 +16,13 @@ export async function GET(
       }
 
       // Send initial connection message
-      send(JSON.stringify({ type: 'connected', taskId: params.id }))
+      send(JSON.stringify({ type: 'connected', taskId: id }))
 
       // Poll for updates every 2 seconds
       const interval = setInterval(async () => {
         try {
           const task = await prisma.task.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
               logs: {
                 orderBy: { timestamp: 'desc' },
