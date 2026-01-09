@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+
+// Lazy load Prisma to avoid initialization errors
+async function getPrisma() {
+  try {
+    const prismaModule = await import('@/lib/prisma')
+    return prismaModule.prisma
+  } catch (error) {
+    console.warn('Prisma not available:', error)
+    return null
+  }
+}
 
 // GET /api/projects/[id] - Get project details
 export async function GET(
@@ -8,7 +18,14 @@ export async function GET(
 ) {
   const { id } = await params
   try {
-    const project = await prisma.project.findUnique({
+    const prismaClient = await getPrisma()
+    if (!prismaClient) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      )
+    }
+    const project = await prismaClient.project.findUnique({
       where: { id },
       include: {
         tasks: {
@@ -49,9 +66,16 @@ export async function PATCH(
 ) {
   const { id } = await params
   try {
+    const prismaClient = await getPrisma()
+    if (!prismaClient) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      )
+    }
     const body = await request.json()
 
-    const project = await prisma.project.update({
+    const project = await prismaClient.project.update({
       where: { id },
       data: body,
     })
@@ -73,7 +97,14 @@ export async function DELETE(
 ) {
   const { id } = await params
   try {
-    await prisma.project.delete({
+    const prismaClient = await getPrisma()
+    if (!prismaClient) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 503 }
+      )
+    }
+    await prismaClient.project.delete({
       where: { id },
     })
 

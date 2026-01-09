@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { fetchOrganizationRepos } from '@/lib/github'
+
+// Lazy load Prisma to avoid initialization errors
+async function getPrisma() {
+  try {
+    const prismaModule = await import('@/lib/prisma')
+    return prismaModule.prisma
+  } catch (error) {
+    console.warn('Prisma not available:', error)
+    return null
+  }
+}
 
 // POST /api/github/sync - Sync repositories from GitHub organization
 export async function POST(request: NextRequest) {
@@ -12,7 +22,22 @@ export async function POST(request: NextRequest) {
     const repos = await fetchOrganizationRepos(org)
 
     // TODO: Get userId from session/auth
-    const userId = 'temp-user-id' // Replace with actual auth
+    const userId = '46466c3f-a639-4925-a74b-d397772639d9' // Default user
+
+    const prismaClient = await getPrisma()
+    if (!prismaClient) {
+      // Return GitHub repos without database sync
+      return NextResponse.json({
+        success: true,
+        synced: 0,
+        message: 'Database not available, returning GitHub repos only',
+        repositories: repos.map((r) => ({
+          name: r.name,
+          description: r.description,
+          githubRepo: r.fullName,
+        })),
+      })
+    }
 
     const syncedProjects = []
     const errors = []
@@ -20,7 +45,7 @@ export async function POST(request: NextRequest) {
     for (const repo of repos) {
       try {
         // Check if project already exists
-        const existing = await prisma.project.findFirst({
+        const existing = await prismaClient.project.findFirst({
           where: {
             githubRepo: repo.fullName,
             userId,
@@ -29,7 +54,7 @@ export async function POST(request: NextRequest) {
 
         if (existing) {
           // Update existing project
-          const updated = await prisma.project.update({
+          const updated = await prismaClient.project.update({
             where: { id: existing.id },
             data: {
               name: repo.name,
@@ -40,7 +65,7 @@ export async function POST(request: NextRequest) {
           syncedProjects.push({ action: 'updated', project: updated })
         } else {
           // Create new project
-          const created = await prisma.project.create({
+          const created = await prismaClient.project.create({
             data: {
               name: repo.name,
               description: repo.description,
