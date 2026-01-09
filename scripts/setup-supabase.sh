@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo "🔧 Supabase Database Setup"
+echo ""
+echo "Stap 1: Haal je database password op"
+echo "1. Ga naar: https://supabase.com/dashboard/project/kwfyehmszybxvsjyunkk/settings/database"
+echo "2. Scroll naar 'Connection string' sectie"
+echo "3. Kies 'URI' tab"
+echo "4. Kopieer de connection string"
+echo ""
+echo "Stap 2: Voeg toe aan .env"
+echo "Voeg deze regel toe aan je .env bestand:"
+echo ""
+echo "DATABASE_URL=\"postgresql://postgres:[YOUR-PASSWORD]@db.kwfyehmszybxvsjyunkk.supabase.co:5432/postgres?pgbouncer=true&connection_limit=1\""
+echo ""
+echo "Stap 3: Push schema naar database"
+echo "Run: npm run db:push"
+echo ""

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { addTaskToQueue } from '@/lib/queue'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 const createTaskSchema = z.object({
   projectId: z.string(),
@@ -78,9 +81,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Trigger background processing (async)
-    // We'll implement this next
-    processTaskInBackground(task.id).catch(console.error)
+    // Add task to queue for background processing
+    await addTaskToQueue(task.id).catch((error) => {
+      console.error('Failed to add task to queue:', error)
+      // Update task status to failed if queue fails
+      prisma.task.update({
+        where: { id: task.id },
+        data: { status: 'FAILED', error: 'Failed to add to queue' },
+      }).catch(console.error)
+    })
 
     return NextResponse.json(task, { status: 201 })
   } catch (error) {
@@ -98,42 +107,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Background task processor (will be enhanced later)
-async function processTaskInBackground(taskId: string) {
-  // Update status to IN_PROGRESS
-  await prisma.task.update({
-    where: { id: taskId },
-    data: { status: 'IN_PROGRESS' },
-  })
-
-  // Add log
-  await prisma.taskLog.create({
-    data: {
-      taskId,
-      message: 'Task processing started',
-      type: 'INFO',
-    },
-  })
-
-  // TODO: Implement actual AI agent execution
-  // For now, simulate processing
-  await new Promise((resolve) => setTimeout(resolve, 2000))
-
-  // Update task as completed (temporary)
-  await prisma.task.update({
-    where: { id: taskId },
-    data: {
-      status: 'COMPLETED',
-      completedAt: new Date(),
-      result: 'Task processing completed (placeholder)',
-    },
-  })
-
-  await prisma.taskLog.create({
-    data: {
-      taskId,
-      message: 'Task completed successfully',
-      type: 'SUCCESS',
-    },
-  })
-}
