@@ -4,9 +4,9 @@
   "description": "Agentic workflow platform for automated project management",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev -p 7500",
-    "build": "prisma generate && next build",
-    "start": "next start",
+    "dev": "node api.js && next dev -p 7500",
+    "build": "node api.js && prisma generate && next build",
+    "start": "node api.js && next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
     "db:generate": "prisma generate",
