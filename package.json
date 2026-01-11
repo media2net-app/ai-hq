@@ -4,9 +4,9 @@
   "description": "Agentic workflow platform for automated project management",
   "main": "index.js",
   "scripts": {
-    "dev": "next dev -p 7500",
-    "build": "prisma generate && next build",
-    "start": "next start",
+    "dev": "node init && next dev -p 7500",
+    "build": "node init && prisma generate && next build",
+    "start": "node init && next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
     "db:generate": "prisma generate",
@@ -16,7 +16,7 @@
     "memory:analyze": "node scripts/memory-cleanup.js",
     "memory:cleanup": "node scripts/kill-node-processes.js",
     "worker": "tsx scripts/worker.ts",
-    "dev:worker": "tsx watch scripts/worker.ts"
+    "dev:worker": "node init && tsx watch scripts/worker.ts"
   },
   "keywords": [],
   "author": "",
