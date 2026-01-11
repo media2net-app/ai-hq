@@ -1,1 +1,1 @@
-<button className='gold-button'>Test</button>
+<button className='golden-button'>Test 2</button>
